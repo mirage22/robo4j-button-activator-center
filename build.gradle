@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'eclipse'
+    id 'application'
+}
+apply from: 'libraries.gradle'
+
+group 'com.robo4j.center.button'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+mainClassName="com.robo4j.center.button.CenterMain"
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile "com.robo4j:robo4j-core:${robo4jVersion}"
+    compile "com.robo4j:robo4j-socket-http:${robo4jVersion}"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "4.10"
+}
