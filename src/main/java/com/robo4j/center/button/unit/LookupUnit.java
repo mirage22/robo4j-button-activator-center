@@ -19,6 +19,7 @@ package com.robo4j.center.button.unit;
 
 import com.robo4j.ConfigurationException;
 import com.robo4j.RoboContext;
+import com.robo4j.RoboReference;
 import com.robo4j.RoboUnit;
 
 import com.robo4j.center.button.model.DescRawElement;
@@ -27,10 +28,10 @@ import com.robo4j.configuration.Configuration;
 import com.robo4j.logging.SimpleLoggingUtil;
 import com.robo4j.net.LookupServiceProvider;
 import com.robo4j.net.RoboContextDescriptor;
+import com.robo4j.socket.http.codec.StringMessage;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -68,9 +69,7 @@ public class LookupUnit extends RoboUnit<Integer> implements TableViewProcessor<
     private volatile AtomicInteger lastPortInRange = new AtomicInteger(PORT_RANGE_START);
     private TableView<DescRawElement> systemTableView;
     private Map<String, RoboContextDescriptor> discoveredContexts = new ConcurrentHashMap<>();
-    private Map<String, RoboContext> singleLcdContexts = new HashMap<>();
     private Map<String, Button> singleContextButton = new HashMap<>();
-    private Map<String, Scene> singleLcdFxScene = new HashMap<>();
     private long delay;
     private long interval;
 
@@ -102,9 +101,11 @@ public class LookupUnit extends RoboUnit<Integer> implements TableViewProcessor<
             Map<String, RoboContextDescriptor> map = LookupServiceProvider.getDefaultLookupService().getDiscoveredContexts();
             List<DescRawElement> netData = map
                     .entrySet().stream()
-                    .filter(e -> e.getValue().getMetadata().size() != 0 &&
+                    .filter(e -> {
+                        return e.getValue().getMetadata().size() != 0 &&
                             !Boolean.valueOf(e.getValue().getMetadata().get("internal")) &&
-                            Boolean.valueOf(e.getValue().getMetadata().get("isButton")))
+                            Boolean.valueOf(e.getValue().getMetadata().get("isButton"));
+                            })
                     .map(e -> {
                         String context = e.getKey();
                         String unitProcessor = e.getValue().getMetadata().get(METADATA_UNIT_PROCESSOR);
@@ -131,7 +132,7 @@ public class LookupUnit extends RoboUnit<Integer> implements TableViewProcessor<
     @SuppressWarnings("unchecked")
     private void createHeaderTableView() {
         TableColumn nameCol = new TableColumn("Context:");
-        nameCol.setMinWidth(120);
+        nameCol.setMinWidth(200);
         nameCol.setCellValueFactory(
                 new PropertyValueFactory<DescRawElement, String>(DescRawElement.KEY_NAME));
 
@@ -142,30 +143,20 @@ public class LookupUnit extends RoboUnit<Integer> implements TableViewProcessor<
         TableColumn descCol = new TableColumn("Desc.:");
         descCol.setMinWidth(120);
         descCol.setCellValueFactory(new PropertyValueFactory<DescRawElement, String>(DescRawElement.KEY_DESC));
-        TableColumn<DescRawElement, Void> buttonCol = new TableColumn("Lcd:");
+        TableColumn<DescRawElement, Void> buttonCol = new TableColumn("Button:");
         buttonCol.setMinWidth(50);
 
         Callback<TableColumn<DescRawElement, Void>, TableCell<DescRawElement, Void>> cellFactory = (param) ->
                 new TableCell<DescRawElement, Void>() {
 
                     private final Button btn = new Button(BUTTON_TEXT_ACTION);
-                    private boolean active = false;
 
                     {
                         btn.setOnAction((ActionEvent event) -> {
                             DescRawElement data = getTableView().getItems().get(getIndex());
                             singleContextButton.putIfAbsent(data.getName(), btn);
-                            if (active) {
-                                btn.setText(BUTTON_TEXT_ACTION);
-                            } else {
-                                btn.setText(BUTTON_TEXT_DISABLE);
-                                try {
-                                    processLcd(data.getName());
-                                } catch (Exception e) {
-                                    SimpleLoggingUtil.error(getClass(), e.getMessage());
-                                }
-                            }
-                            active = !active;
+                            btn.setText(BUTTON_TEXT_ACTION);
+                            processButton(data.getName(), data.getValue());
                         });
                     }
 
@@ -193,9 +184,11 @@ public class LookupUnit extends RoboUnit<Integer> implements TableViewProcessor<
     }
 
 
-    private void processLcd(String contextName) throws Exception {
+    private void processButton(String contextName, String controllerName) {
         //TODO implement logic
-        SimpleLoggingUtil.info(getClass(), "needs to be implemented");
+        StringMessage pushMessage = new StringMessage("push");
+        RoboReference<StringMessage> controller = LookupServiceProvider.getDefaultLookupService().getContext(contextName).getReference(controllerName);
+        controller.sendMessage(pushMessage);
     }
 
 

@@ -48,7 +48,7 @@ public class CenterMain extends Application {
 
         final FXMLLoader fxmlLoader = new FXMLLoader(fxFile);
         BorderPane myPane = fxmlLoader.load();
-        stage.setScene(new Scene(myPane, 800, 600));
+        stage.setScene(new Scene(myPane, 520, 520));
         myPane.setStyle("-fx-border-color:black");
 
         final RoboBuilder builder = new RoboBuilder(systemIS);

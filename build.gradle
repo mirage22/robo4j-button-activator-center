@@ -22,6 +22,6 @@ dependencies {
     compile "com.robo4j:robo4j-socket-http:${robo4jVersion}"
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = "4.10"
+wrapper {
+    gradleVersion = "${roboGradleVersion}"
 }
